@@ -609,7 +609,7 @@ export default function App() {
 
             {/* Footer */}
             <div style={{ textAlign: "center", fontSize: 11, color: "#98926c", marginTop: 8 }}>
-              name.mhalong.com · คำนวณเลขศาสตร์ออนไลน์
+              name.mhalong.com · ดูดวงชื่อ-นามสกุล วันนี้ดวงเป็นยังไง? มาเช็กกับมหาหลง
             </div>
           </div>
         );
