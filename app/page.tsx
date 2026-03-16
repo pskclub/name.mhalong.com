@@ -198,7 +198,7 @@ export default function App() {
 
         {/* Results Section */}
         {result && (() => {
-          const { fn, ln, total, dayIdx, badInFirst, badInLast } = result;
+          const { fn, ln, total, dayIdx, badInFirst } = result;
           const fnInfo = getNumPred(fn.sum);
           const lnInfo = ln ? getNumPred(ln.sum) : null;
           const totalInfo = getNumPred(total);
@@ -260,31 +260,19 @@ export default function App() {
                     ควรหลีกเลี่ยง: <span className="font-bold text-accent-600">{dayIdx === 1 ? "สระทั้งหมด (ยกเว้นไม้หันอากาศและการันต์)" : kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.chars.join(" ")}</span>
                   </div>
                   <div className="pl-7">
-                    {(badInFirst.length === 0 && badInLast.length === 0) ? (
+                    {badInFirst.length === 0 ? (
                       <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                           <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                         </svg>
-                        ดีเยี่ยม! ไม่พบอักษรกาลกิณีในชื่อและนามสกุล
+                        ดีเยี่ยม! ไม่พบอักษรกาลกิณีในชื่อ
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        {badInFirst.length > 0 && (
-                          <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                            พบในชื่อ: <strong className="text-accent-800">{badInFirst.join(", ")}</strong>
-                          </div>
-                        )}
-                        {badInLast.length > 0 && (
-                          <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                            พบในนามสกุล: <strong className="text-accent-800">{badInLast.join(", ")}</strong>
-                          </div>
-                        )}
+                      <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                        พบในชื่อ: <strong className="text-accent-800">{badInFirst.join(", ")}</strong>
                       </div>
                     )}
                   </div>
@@ -448,7 +436,7 @@ export default function App() {
                     <div>
                       <h4 className="text-sm font-semibold text-primary-800 mb-2">ชื่อ (ทักษาของแต่ละหมวดอักษร):</h4>
                       <div className="flex flex-wrap items-center gap-2">
-                        {fn.breakdown.map((x, i) => (
+                        {fn.breakdown.map((x, i) => getTaksaCategory(dayIdx, x.ch) && (
                           <div key={i} className="flex flex-col items-center bg-primary-50 rounded-lg px-3 py-2 border border-primary-100 shadow-sm">
                             <span className="text-lg font-bold text-primary-900">{x.ch}</span>
                             <span className={`text-xs font-bold mt-1 ${getTaksaCategory(dayIdx, x.ch) === "กาลกิณี" ? "text-red-500" : "text-green-600"}`}>
@@ -458,21 +446,6 @@ export default function App() {
                         ))}
                       </div>
                     </div>
-                    {ln && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-primary-800 mb-2 mt-4 border-t border-primary-100 pt-4">นามสกุล (ทักษาของแต่ละหมวดอักษร):</h4>
-                        <div className="flex flex-wrap items-center gap-2">
-                          {ln.breakdown.map((x, i) => (
-                            <div key={i} className="flex flex-col items-center bg-primary-50 rounded-lg px-3 py-2 border border-primary-100 shadow-sm">
-                              <span className="text-lg font-bold text-primary-900">{x.ch}</span>
-                              <span className={`text-xs font-bold mt-1 ${getTaksaCategory(dayIdx, x.ch) === "กาลกิณี" ? "text-red-500" : "text-green-600"}`}>
-                                {getTaksaCategory(dayIdx, x.ch)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
                   </div>
                   
                   <div className="mt-8">
@@ -556,13 +529,13 @@ export default function App() {
 
       {/* Share card — hidden off-screen, captured by saveAsImage */}
       {result && (() => {
-        const { fn, ln, total, dayIdx, badInFirst, badInLast } = result;
+        const { fn, ln, total, dayIdx, badInFirst } = result;
         const fnInfo = getNumPred(fn.sum);
         const lnInfo = ln ? getNumPred(ln.sum) : null;
         const totalInfo = getNumPred(total);
         const scoreColor = (s: number) => s >= 4 ? "#059669" : s >= 3 ? "#d97706" : "#dc2626";
         const scoreBg = (s: number) => s >= 4 ? "#d1fae5" : s >= 3 ? "#fef3c7" : "#fee2e2";
-        const kalaOk = badInFirst.length === 0 && badInLast.length === 0;
+        const kalaOk = badInFirst.length === 0;
 
         return (
           <div
@@ -647,13 +620,15 @@ export default function App() {
               }}>
                 <div style={{ fontSize: 22 }}>{kalaOk ? "✅" : "⚠️"}</div>
                 <div>
+                  <div style={{ fontSize: 11, color: "#625d45", marginBottom: 2 }}>
+                    วันเกิด: <strong>วัน{kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.day}</strong>
+                  </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: kalaOk ? "#166534" : "#9a3412" }}>
-                    {kalaOk ? "ไม่พบอักษรกาลกิณี" : "พบอักษรกาลกิณี"}
+                    {kalaOk ? "ไม่พบอักษรกาลกิณีในชื่อ" : "พบอักษรกาลกิณีในชื่อ"}
                   </div>
                   {!kalaOk && (
                     <div style={{ fontSize: 12, color: "#9a3412", marginTop: 2 }}>
-                      {badInFirst.length > 0 && `ชื่อ: ${badInFirst.join(", ")}  `}
-                      {badInLast.length > 0 && `นามสกุล: ${badInLast.join(", ")}`}
+                      {`ชื่อ: ${badInFirst.join(", ")}`}
                     </div>
                   )}
                 </div>

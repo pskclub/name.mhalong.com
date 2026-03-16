@@ -1595,23 +1595,19 @@ export const taksaMap = {
   6: { day: "ศุกร์", categories: ["อายุ","เดช","ศรี","มูละ","อุตสาหะ","มนตรี","กาลกิณี","บริวาร"] }
 };
 
-export function getTaksaCategory(dayIdx: number, char: string): string {
+export function getTaksaCategory(dayIdx: number, char: string): string | null {
   let groupIdx = -1;
-  const isVowelChar = isVowel(char) || char === "อ"; // Assuming อ acts as vowel for Taksa
-  if (isVowelChar) groupIdx = 0;
-  else {
-    for (let i = 1; i < taksaGroups.length; i++) {
-      if (taksaGroups[i].chars.includes(char)) {
-        groupIdx = i;
-        break;
-      }
+  for (let i = 0; i < taksaGroups.length; i++) {
+    if (taksaGroups[i].chars.includes(char)) {
+      groupIdx = i;
+      break;
     }
   }
   
-  if (groupIdx === -1) return "บริวาร";
+  if (groupIdx === -1) return null;
   
   const dayData = taksaMap[dayIdx as keyof typeof taksaMap];
-  if (!dayData) return "";
+  if (!dayData) return null;
   
   const categories = dayData.categories;
   return categories[groupIdx] || "";
