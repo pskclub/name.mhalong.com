@@ -10,7 +10,7 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-noto-sans-thai);
   --font-mono: var(--font-noto-sans-mono);
-  
+
   --color-primary-50: #f6f5f0;
   --color-primary-100: #eceae1;
   --color-primary-200: #dad5c3;
@@ -49,7 +49,21 @@
 }
 
 body {
-  background: var(--background);
+  background: #F7F3D3;
+  background-image: linear-gradient(345deg,
+      hsl(9deg 81% 81%) 0%,
+      hsl(16deg 81% 82%) 26%,
+      hsl(22deg 79% 84%) 36%,
+      hsl(28deg 75% 86%) 43%,
+      hsl(35deg 70% 88%) 49%,
+      hsl(43deg 66% 91%) 53%,
+      hsl(54deg 66% 94%) 58%,
+      hsl(53deg 68% 93%) 61%,
+      hsl(53deg 70% 91%) 66%,
+      hsl(53deg 71% 90%) 70%,
+      hsl(53deg 72% 88%) 76%,
+      hsl(53deg 73% 87%) 84%,
+      hsl(52deg 74% 85%) 100%);
   color: var(--foreground);
   font-family: var(--font-noto-sans-thai), 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
 }

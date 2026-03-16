@@ -126,7 +126,7 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen bg-linear-to-br from-secondary-100 via-secondary-50 to-white text-slate-800 p-4 sm:p-8 font-sans">
+    <div className="min-h-screen  text-slate-800 p-4 sm:p-8 font-sans">
       <div className="max-w-2xl mx-auto space-y-8">
         
         {/* Header Section */}
@@ -187,7 +187,7 @@ export default function App() {
           <button 
             type="submit" 
             disabled={!firstName.trim()}
-            className="w-full bg-accent-500 hover:bg-accent-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3.5 px-4 shadow-lg shadow-accent-200/50 transition-all hover:shadow-accent-300/50 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full bg-accent-500 hover:bg-accent-600 disabled:bg-accent-500/30 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3.5 px-4 shadow-lg disabled:shadow-none shadow-accent-200/50 transition-all hover:shadow-accent-300/50 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
           >
             วิเคราะห์ผลลัพธ์
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
