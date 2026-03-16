@@ -69,8 +69,8 @@ export default function App() {
 
   useEffect(() => {
     document.title = result && fullName
-      ? `เลขศาสตร์ - ${fullName}`
-      : "คำนวณเลขศาสตร์";
+      ? `เลขศาสตร์ - ${fullName} | ดูดวงชื่อ-นามสกุล วันนี้ดวงเป็นยังไง? มาเช็กกับมหาหลง`
+      : "ดูดวงชื่อ-นามสกุล วันนี้ดวงเป็นยังไง? มาเช็กกับมหาหลง";
   }, [result, fullName]);
 
   function share() {
@@ -80,7 +80,7 @@ export default function App() {
     if (birthDay) params.set("bd", birthDay);
     const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
     if (navigator.share) {
-      navigator.share({ title: `ผลเลขศาสตร์${fullName ? ` - ${fullName}` : ""}`, url });
+      navigator.share({ title: `ผลเลขศาสตร์ ${fullName ? ` ${fullName} | ดูดวงชื่อ-นามสกุล วันนี้ดวงเป็นยังไง? มาเช็กกับมหาหลง` : "ดูดวงชื่อ-นามสกุล วันนี้ดวงเป็นยังไง? มาเช็กกับมหาหลง"}`, url });
     } else {
       navigator.clipboard.writeText(url).then(() => {
         setCopied(true);
@@ -108,7 +108,7 @@ export default function App() {
       const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(shareCardRef.current, { pixelRatio: 2 });
       const link = document.createElement("a");
-      link.download = `เลขศาสตร์${fullName ? `-${fullName}` : ""}.png`;
+      link.download = `เลขศาสตร์-${fullName ? `${fullName}-mhalong.com` : "ดูดวงชื่อ-นามสกุล วันนี้ดวงเป็นยังไง? มาเช็กกับมหาหลง"}.png`;
       link.href = dataUrl;
       link.click();
     } finally {
