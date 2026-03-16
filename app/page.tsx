@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import {
   calcName,
@@ -32,11 +32,60 @@ interface ResultType {
   badInLast: string[];
 }
 
+function calcFromParams(fn: string, ln: string, bd: string): ResultType | null {
+  if (!fn.trim()) return null;
+  const fnResult = calcName(fn.trim());
+  const lnResult = ln.trim() ? calcName(ln.trim()) : null;
+  const total = lnResult ? fnResult.sum + lnResult.sum : fnResult.sum;
+  const dayIdx = bd !== "" ? parseInt(bd, 10) : null;
+  const badInFirst = dayIdx !== null ? checkKalakinee(fn.trim(), dayIdx) : [];
+  const badInLast = dayIdx !== null && ln.trim() ? checkKalakinee(ln.trim(), dayIdx) : [];
+  return { fn: fnResult, ln: lnResult, total, dayIdx, badInFirst, badInLast };
+}
+
 export default function App() {
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [birthDay, setBirthDay] = useState("");
-  const [result, setResult] = useState<ResultType | null>(null);
+  const [firstName, setFirstName] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("fn") ?? "";
+  });
+  const [lastName, setLastName] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("ln") ?? "";
+  });
+  const [birthDay, setBirthDay] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return new URLSearchParams(window.location.search).get("bd") ?? "";
+  });
+  const [result, setResult] = useState<ResultType | null>(() => {
+    if (typeof window === "undefined") return null;
+    const p = new URLSearchParams(window.location.search);
+    return calcFromParams(p.get("fn") ?? "", p.get("ln") ?? "", p.get("bd") ?? "");
+  });
+  const [copied, setCopied] = useState(false);
+
+  const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
+
+  useEffect(() => {
+    document.title = result && fullName
+      ? `เลขศาสตร์ - ${fullName}`
+      : "คำนวณเลขศาสตร์";
+  }, [result, fullName]);
+
+  function share() {
+    const params = new URLSearchParams();
+    if (firstName.trim()) params.set("fn", firstName.trim());
+    if (lastName.trim()) params.set("ln", lastName.trim());
+    if (birthDay) params.set("bd", birthDay);
+    const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+    if (navigator.share) {
+      navigator.share({ title: `ผลเลขศาสตร์${fullName ? ` - ${fullName}` : ""}`, url });
+    } else {
+      navigator.clipboard.writeText(url).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  }
 
   function calculate() {
     if (!firstName.trim()) return;
@@ -49,10 +98,10 @@ export default function App() {
     setResult({ fn, ln, total, dayIdx, badInFirst, badInLast });
   }
 
-  function getNumPred(n: number) {
+  function getNumPred(n: number): { score: number; text: string } {
     if (n in fullPredictions) return fullPredictions[n as keyof typeof fullPredictions];
     const base = n % 9 || 9;
-    return fullPredictions[base as keyof typeof fullPredictions] || "";
+    return fullPredictions[base as keyof typeof fullPredictions] ?? { score: 0, text: "" };
   }
 
 
@@ -72,7 +121,13 @@ export default function App() {
         </div>
 
         {/* Form Card */}
-        <div className="bg-white rounded-3xl shadow-xl shadow-secondary-200/50 p-6 sm:p-8 border border-primary-200 backdrop-blur-sm transition-all">
+        <form 
+          onSubmit={(e) => {
+            e.preventDefault();
+            calculate();
+          }}
+          className="bg-white rounded-3xl shadow-xl shadow-secondary-200/50 p-6 sm:p-8 border border-primary-200 backdrop-blur-sm transition-all"
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-primary-800">ชื่อ (ภาษาไทยหรืออังกฤษ)</label>
@@ -111,7 +166,7 @@ export default function App() {
           </div>
 
           <button 
-            onClick={calculate} 
+            type="submit" 
             disabled={!firstName.trim()}
             className="w-full bg-accent-500 hover:bg-accent-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3.5 px-4 shadow-lg shadow-accent-200/50 transition-all hover:shadow-accent-300/50 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
           >
@@ -120,7 +175,7 @@ export default function App() {
               <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
-        </div>
+        </form>
 
         {/* Results Section */}
         {result && (() => {
@@ -221,8 +276,35 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-                    <p className={`text-sm leading-relaxed mt-4 ${item.highlight ? "text-primary-950/90 font-medium" : "text-slate-700"}`}>
-                      {getNumPred(item.num)}
+                    <div className="flex items-center gap-1 mt-3">
+                      {Array.from({ length: 5 }).map((_, i) => {
+                        const score = getNumPred(item.num).score;
+                        const filled = score >= i + 1;
+                        const half = !filled && score >= i + 0.5;
+                        const uid = `half-${idx}-${i}`;
+                        return (
+                          <svg key={i} xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20">
+                            {half && (
+                              <defs>
+                                <linearGradient id={uid}>
+                                  <stop offset="50%" stopColor="#fbbf24" />
+                                  <stop offset="50%" stopColor="#e2e8f0" />
+                                </linearGradient>
+                              </defs>
+                            )}
+                            <path
+                              fill={filled ? "#fbbf24" : half ? `url(#${uid})` : "#e2e8f0"}
+                              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
+                            />
+                          </svg>
+                        );
+                      })}
+                      <span className={`ml-1 text-xs font-semibold ${item.highlight ? "text-primary-700" : "text-slate-500"}`}>
+                        {getNumPred(item.num).score}/5
+                      </span>
+                    </div>
+                    <p className={`text-sm leading-relaxed mt-3 ${item.highlight ? "text-primary-950/90 font-medium" : "text-slate-700"}`}>
+                      {getNumPred(item.num).text}
                     </p>
                   </div>
                 ))}
@@ -343,7 +425,27 @@ export default function App() {
                 </div>
               )}
 
-              <div className="text-center pt-8 pb-4">
+              <div className="text-center pt-8 pb-4 space-y-4">
+                <button
+                  onClick={share}
+                  className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl py-2.5 px-5 shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  {copied ? (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      คัดลอกลิงก์แล้ว!
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                      </svg>
+                      แชร์ผลลัพธ์
+                    </>
+                  )}
+                </button>
                 <p className="text-xs sm:text-sm text-primary-600 max-w-lg mx-auto leading-relaxed">
                   * เลขศาสตร์และหลักเกณฑ์เหล่านี้เป็นเพียงทางเลือกหนึ่งในการพิจารณาหาชื่อมงคลเท่านั้น ชะตาชีวิตยังต้องพึ่งพากรรมดีและการปฏิบัติตนของท่านเอง
                 </p>
