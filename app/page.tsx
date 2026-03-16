@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import {
   calcName,
   checkKalakinee,
-  numerologyData,
   fullPredictions,
   kalakineeMap,
   getTaksaCategory,
@@ -98,10 +97,10 @@ export default function App() {
     setResult({ fn, ln, total, dayIdx, badInFirst, badInLast });
   }
 
-  function getNumPred(n: number): { score: number; text: string } {
+  function getNumPred(n: number): { title: string; text: string; score: number } {
     if (n in fullPredictions) return fullPredictions[n as keyof typeof fullPredictions];
     const base = n % 9 || 9;
-    return fullPredictions[base as keyof typeof fullPredictions] ?? { score: 0, text: "" };
+    return fullPredictions[base as keyof typeof fullPredictions] ?? { title: "", score: 0, text: "" };
   }
 
 
@@ -180,9 +179,9 @@ export default function App() {
         {/* Results Section */}
         {result && (() => {
           const { fn, ln, total, dayIdx, badInFirst, badInLast } = result;
-          const fnInfo = fn.sum in numerologyData ? numerologyData[fn.sum as keyof typeof numerologyData] : null;
-          const lnInfo = ln && ln.sum in numerologyData ? numerologyData[ln.sum as keyof typeof numerologyData] : null;
-          const totalInfo = total in numerologyData ? numerologyData[total as keyof typeof numerologyData] : null;
+          const fnInfo = getNumPred(fn.sum);
+          const lnInfo = ln ? getNumPred(ln.sum) : null;
+          const totalInfo = getNumPred(total);
 
           return (
             <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -272,7 +271,7 @@ export default function App() {
                           {item.label}
                         </h4>
                         <div className={`text-sm mt-0.5 font-medium ${item.highlight ? "text-primary-700" : "text-primary-600"}`}>
-                          {item.info?.title} {item.info?.sub ? "— " + item.info.sub : ""}
+                          {item.info?.title}
                         </div>
                       </div>
                     </div>
