@@ -67,7 +67,7 @@ export default function App() {
             คำนวณเลขศาสตร์
           </h1>
           <p className="text-primary-800 text-sm sm:text-base font-medium">
-            วิเคราะห์ชื่อและนามสกุลตามหลักเลขศาสตร์และอักษรกาลกิณี
+            วิเคราะห์ชื่อและนามสกุลตามหลักเลขศาสตร์และอักษรกาลกิณี (รองรับภาษาไทยและภาษาอังกฤษ)
           </p>
         </div>
 
@@ -75,22 +75,22 @@ export default function App() {
         <div className="bg-white rounded-3xl shadow-xl shadow-secondary-200/50 p-6 sm:p-8 border border-primary-200 backdrop-blur-sm transition-all">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-primary-800">ชื่อ (ภาษาไทย)</label>
-              <input 
+              <label className="block text-sm font-semibold text-primary-800">ชื่อ (ภาษาไทยหรืออังกฤษ)</label>
+              <input
                 className="w-full bg-secondary-50 border border-primary-300 text-slate-900 rounded-xl px-4 py-3 outline-none transition-all focus:ring-2 focus:ring-primary-400/50 focus:border-primary-500 focus:bg-white placeholder:text-slate-400"
-                value={firstName} 
-                onChange={e => setFirstName(e.target.value.replace(/[^ก-๙\s]/g, ''))} 
-                placeholder="เช่น ธันยพร" 
+                value={firstName}
+                onChange={e => setFirstName(e.target.value.replace(/[^ก-๙a-zA-Z\s]/g, ''))}
+                placeholder="เช่น ธันยพร หรือ John"
               />
-              <p className="text-[11px] text-slate-500 mt-1">* กรุณากรอกเฉพาะตัวอักษรภาษาไทยเท่านั้น</p>
+              <p className="text-[11px] text-slate-500 mt-1">* รองรับทั้งภาษาไทยและภาษาอังกฤษ</p>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-semibold text-primary-800">นามสกุล (ภาษาไทย)</label>
-              <input 
+              <label className="block text-sm font-semibold text-primary-800">นามสกุล (ภาษาไทยหรืออังกฤษ)</label>
+              <input
                 className="w-full bg-secondary-50 border border-primary-300 text-slate-900 rounded-xl px-4 py-3 outline-none transition-all focus:ring-2 focus:ring-primary-400/50 focus:border-primary-500 focus:bg-white placeholder:text-slate-400"
-                value={lastName} 
-                onChange={e => setLastName(e.target.value.replace(/[^ก-๙\s]/g, ''))} 
-                placeholder="เช่น พุทธสุวรรณ" 
+                value={lastName}
+                onChange={e => setLastName(e.target.value.replace(/[^ก-๙a-zA-Z\s]/g, ''))}
+                placeholder="เช่น พุทธสุวรรณ หรือ Doe"
               />
               <p className="text-[11px] text-slate-500 mt-1">* หากไม่มีเว้นว่างไว้ได้</p>
             </div>

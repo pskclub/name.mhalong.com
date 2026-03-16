@@ -59,6 +59,32 @@ export const toneMap = {
 // Unicode map for Thai characters
 export function getCharValue(ch: string) {
   const code = ch.charCodeAt(0);
+
+  // Check for English letters first (case-insensitive)
+  const upperCh = ch.toUpperCase();
+  const englishMap: Record<string, number> = {
+    // 1: A, I, J, Q, Y
+    'A': 1, 'I': 1, 'J': 1, 'Q': 1, 'Y': 1,
+    // 2: B, K, R
+    'B': 2, 'K': 2, 'R': 2,
+    // 3: C, G, L, S
+    'C': 3, 'G': 3, 'L': 3, 'S': 3,
+    // 4: D, M, T
+    'D': 4, 'M': 4, 'T': 4,
+    // 5: E, H, N, X
+    'E': 5, 'H': 5, 'N': 5, 'X': 5,
+    // 6: U, V, W
+    'U': 6, 'V': 6, 'W': 6,
+    // 7: O, Z
+    'O': 7, 'Z': 7,
+    // 8: F, P
+    'F': 8, 'P': 8,
+  };
+
+  if (englishMap[upperCh]) {
+    return englishMap[upperCh];
+  }
+
   // Revised accurate mapping from the table image
   // 1: ก ด ท ถ ภ ฤ / สระ อา อุ อำ / ไม้เอก
   // 2: ข ช บ ป ง / สระ เอ แอ อู / ไม้โท
