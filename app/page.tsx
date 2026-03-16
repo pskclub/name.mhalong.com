@@ -1,0 +1,356 @@
+"use client";
+
+import { useState } from "react";
+
+import {
+  calcName,
+  checkKalakinee,
+  numerologyData,
+  fullPredictions,
+  kalakineeMap,
+  getTaksaCategory,
+  taksaDefinitions,
+  planetPowerPredictions
+} from "./lib/numerology";
+
+interface NameBreakdown {
+  ch: string;
+  v: number;
+}
+
+interface NameResult {
+  sum: number;
+  breakdown: NameBreakdown[];
+}
+
+interface ResultType {
+  fn: NameResult;
+  ln: NameResult | null;
+  total: number;
+  dayIdx: number | null;
+  badInFirst: string[];
+  badInLast: string[];
+}
+
+export default function App() {
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [birthDay, setBirthDay] = useState("");
+  const [result, setResult] = useState<ResultType | null>(null);
+
+  function calculate() {
+    if (!firstName.trim()) return;
+    const fn = calcName(firstName.trim());
+    const ln = lastName.trim() ? calcName(lastName.trim()) : null;
+    const total = ln ? fn.sum + ln.sum : fn.sum;
+    const dayIdx = birthDay !== "" ? parseInt(birthDay, 10) : null;
+    const badInFirst = dayIdx !== null ? checkKalakinee(firstName.trim(), dayIdx) : [];
+    const badInLast = dayIdx !== null && lastName.trim() ? checkKalakinee(lastName.trim(), dayIdx) : [];
+    setResult({ fn, ln, total, dayIdx, badInFirst, badInLast });
+  }
+
+  function getNumPred(n: number) {
+    if (n in fullPredictions) return fullPredictions[n as keyof typeof fullPredictions];
+    const base = n % 9 || 9;
+    return fullPredictions[base as keyof typeof fullPredictions] || "";
+  }
+
+
+
+  return (
+    <div className="min-h-screen bg-linear-to-br from-secondary-100 via-secondary-50 to-white text-slate-800 p-4 sm:p-8 font-sans">
+      <div className="max-w-2xl mx-auto space-y-8">
+        
+        {/* Header Section */}
+        <div className="text-center space-y-2 mt-8">
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-primary-900 drop-shadow-sm">
+            คำนวณเลขศาสตร์
+          </h1>
+          <p className="text-primary-800 text-sm sm:text-base font-medium">
+            วิเคราะห์ชื่อและนามสกุลตามหลักเลขศาสตร์และอักษรกาลกิณี
+          </p>
+        </div>
+
+        {/* Form Card */}
+        <div className="bg-white rounded-3xl shadow-xl shadow-secondary-200/50 p-6 sm:p-8 border border-primary-200 backdrop-blur-sm transition-all">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-primary-800">ชื่อ (ภาษาไทย)</label>
+              <input 
+                className="w-full bg-secondary-50 border border-primary-300 text-slate-900 rounded-xl px-4 py-3 outline-none transition-all focus:ring-2 focus:ring-primary-400/50 focus:border-primary-500 focus:bg-white placeholder:text-slate-400"
+                value={firstName} 
+                onChange={e => setFirstName(e.target.value)} 
+                placeholder="เช่น มิลิน" 
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-primary-800">นามสกุล (ภาษาไทย)</label>
+              <input 
+                className="w-full bg-secondary-50 border border-primary-300 text-slate-900 rounded-xl px-4 py-3 outline-none transition-all focus:ring-2 focus:ring-primary-400/50 focus:border-primary-500 focus:bg-white placeholder:text-slate-400"
+                value={lastName} 
+                onChange={e => setLastName(e.target.value)} 
+                placeholder="เช่น ถิ่นไทใจดี" 
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2 mb-8">
+            <label className="block text-sm font-semibold text-primary-800">วันเกิด <span className="text-primary-600 font-normal">(สำหรับตรวจอักษรกาลกิณี)</span></label>
+            <select
+              className="w-full sm:w-1/2 bg-secondary-50 border border-primary-300 text-slate-900 rounded-xl px-4 py-3 outline-none transition-all focus:ring-2 focus:ring-primary-400/50 focus:border-primary-500 focus:bg-white"
+              value={birthDay} 
+              onChange={e => setBirthDay(e.target.value)} 
+            >
+              <option value="">-- เลือกวันเกิด --</option>
+              {Object.entries(kalakineeMap).map(([idx, data]) => (
+                <option key={idx} value={idx}>{data.day}</option>
+              ))}
+            </select>
+          </div>
+
+          <button 
+            onClick={calculate} 
+            disabled={!firstName.trim()}
+            className="w-full bg-accent-500 hover:bg-accent-600 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-3.5 px-4 shadow-lg shadow-accent-200/50 transition-all hover:shadow-accent-300/50 active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+          >
+            วิเคราะห์ผลลัพธ์
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Results Section */}
+        {result && (() => {
+          const { fn, ln, total, dayIdx, badInFirst, badInLast } = result;
+          const fnInfo = fn.sum in numerologyData ? numerologyData[fn.sum as keyof typeof numerologyData] : null;
+          const lnInfo = ln && ln.sum in numerologyData ? numerologyData[ln.sum as keyof typeof numerologyData] : null;
+          const totalInfo = total in numerologyData ? numerologyData[total as keyof typeof numerologyData] : null;
+
+          return (
+            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              
+              {/* Summary Cards */}
+              <div className={`grid grid-cols-1 ${ln ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-primary-200 flex flex-col items-center justify-center text-center">
+                  <div className="text-primary-600 text-xs font-medium uppercase tracking-wider mb-1">เลขชื่อ</div>
+                  <div className="text-4xl font-bold text-primary-900">{fn.sum}</div>
+                  <div className="text-sm font-medium text-primary-700 mt-2">{fnInfo?.title}</div>
+                </div>
+                
+                {ln && (
+                  <div className="bg-white rounded-2xl p-5 shadow-sm border border-primary-200 flex flex-col items-center justify-center text-center">
+                    <div className="text-primary-600 text-xs font-medium uppercase tracking-wider mb-1">เลขนามสกุล</div>
+                    <div className="text-4xl font-bold text-primary-900">{ln.sum}</div>
+                    <div className="text-sm font-medium text-primary-700 mt-2">{lnInfo?.title}</div>
+                  </div>
+                )}
+                
+                <div className="bg-primary-600 rounded-2xl p-5 shadow-md shadow-primary-200 border border-primary-500 flex flex-col items-center justify-center text-center text-white relative overflow-hidden">
+                  <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
+                  <div className="text-primary-50 text-xs font-medium uppercase tracking-wider mb-1 relative z-10">เลขรวม</div>
+                  <div className="text-4xl font-bold relative z-10">{total}</div>
+                  <div className="text-sm font-medium text-primary-100 mt-2 relative z-10">{totalInfo?.title}</div>
+                </div>
+              </div>
+
+              {/* Breakdown */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200">
+                <h3 className="text-sm font-bold text-primary-900 mb-4 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                  การถอดค่าตัวอักษร
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold text-primary-800 mr-2 min-w-16">ชื่อ:</span>
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {fn.breakdown.map((x, i) => (
+                        <div key={i} className="flex flex-col items-center bg-secondary-50 rounded px-2 py-1 border border-primary-300 shadow-sm">
+                          <span className="text-base font-bold text-primary-900">{x.ch}</span>
+                          <span className="text-[11px] text-primary-600 font-mono font-bold mt-0.5">{x.v}</span>
+                        </div>
+                      ))}
+                      <span className="ml-2 text-sm font-medium text-slate-600">= <strong className="text-accent-600 text-xl font-bold ml-1">{fn.sum}</strong></span>
+                    </div>
+                  </div>
+                  
+                  {ln && (
+                    <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-primary-100">
+                      <span className="text-sm font-semibold text-primary-800 mr-2 min-w-16">นามสกุล:</span>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {ln.breakdown.map((x, i) => (
+                          <div key={i} className="flex flex-col items-center bg-secondary-50 rounded px-2 py-1 border border-primary-300 shadow-sm">
+                            <span className="text-base font-bold text-primary-900">{x.ch}</span>
+                            <span className="text-[11px] text-primary-600 font-mono font-bold mt-0.5">{x.v}</span>
+                          </div>
+                        ))}
+                        <span className="ml-2 text-sm font-medium text-slate-600">= <strong className="text-accent-600 text-xl font-bold ml-1">{ln.sum}</strong></span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Predictions */}
+              <div className="space-y-4">
+                {[
+                  { label: `คำทำนายเลขชื่อ`, num: fn.sum, info: fnInfo, highlight: false },
+                  ...(ln ? [{ label: `คำทำนายเลขนามสกุล`, num: ln.sum, info: lnInfo, highlight: false }] : []),
+                  { label: `คำทำนายเลขรวม`, num: total, info: totalInfo, highlight: true },
+                ].map((item, idx) => (
+                  <div key={idx} className={`rounded-2xl p-6 transition-all ${
+                    item.highlight 
+                      ? "bg-primary-50 border-2 border-primary-300 shadow-sm"
+                      : "bg-white border border-primary-200 shadow-sm"
+                  }`}>
+                    <div className="flex items-start gap-4 mb-3">
+                      <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg
+                        ${item.highlight ? "bg-primary-600 text-white shadow-md shadow-primary-200" : "bg-primary-100 text-primary-900"}`}>
+                        {item.num}
+                      </div>
+                      <div className="pt-1">
+                        <h4 className={`font-bold ${item.highlight ? "text-primary-900" : "text-primary-950"}`}>
+                          {item.label}
+                        </h4>
+                        <div className={`text-sm mt-0.5 font-medium ${item.highlight ? "text-primary-700" : "text-primary-600"}`}>
+                          {item.info?.title} {item.info?.sub ? "— " + item.info.sub : ""}
+                        </div>
+                      </div>
+                    </div>
+                    <p className={`text-sm leading-relaxed mt-4 ${item.highlight ? "text-primary-950/90 font-medium" : "text-slate-700"}`}>
+                      {getNumPred(item.num)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              
+
+              {/* Taksa Analysis */}
+              {dayIdx !== null && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200 mt-4">
+                  <h3 className="text-base font-bold text-primary-900 mb-4 flex items-center gap-2">
+                    <svg className="h-5 w-5 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    หลักทักษาปกรณ์ (พลังสะท้อน / พลังเงา)
+                  </h3>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-sm font-semibold text-primary-800 mb-2">ชื่อ (ทักษาของแต่ละหมวดอักษร):</h4>
+                      <div className="flex flex-wrap items-center gap-2">
+                        {fn.breakdown.map((x, i) => (
+                          <div key={i} className="flex flex-col items-center bg-primary-50 rounded-lg px-3 py-2 border border-primary-100 shadow-sm">
+                            <span className="text-lg font-bold text-primary-900">{x.ch}</span>
+                            <span className={`text-xs font-bold mt-1 ${getTaksaCategory(dayIdx, x.ch) === "กาลกิณี" ? "text-red-500" : "text-green-600"}`}>
+                              {getTaksaCategory(dayIdx, x.ch)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {ln && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-primary-800 mb-2 mt-4 border-t border-primary-100 pt-4">นามสกุล (ทักษาของแต่ละหมวดอักษร):</h4>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {ln.breakdown.map((x, i) => (
+                            <div key={i} className="flex flex-col items-center bg-primary-50 rounded-lg px-3 py-2 border border-primary-100 shadow-sm">
+                              <span className="text-lg font-bold text-primary-900">{x.ch}</span>
+                              <span className={`text-xs font-bold mt-1 ${getTaksaCategory(dayIdx, x.ch) === "กาลกิณี" ? "text-red-500" : "text-green-600"}`}>
+                                {getTaksaCategory(dayIdx, x.ch)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-8">
+                      <h4 className="text-sm font-semibold text-primary-800 mb-3">ความหมายหลักทักษา:</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {Object.entries(taksaDefinitions).map(([key, desc]) => (
+                          <div key={key} className="flex flex-col p-3 rounded bg-secondary-50 border border-secondary-100">
+                             <span className={`text-sm font-bold ${key === "กาลกิณี" ? "text-red-500" : "text-primary-700"}`}>{key}</span>
+                             <span className="text-xs text-slate-600 mt-1">{desc}</span>
+                          </div>
+                        ))}
+                      </div>
+                  </div>
+                  
+                  {planetPowerPredictions[total] && (
+                     <div className="mt-8 border-t border-primary-100 pt-4">
+                        <h4 className="text-sm font-semibold text-primary-800 mb-3">นิยามความหมายกำลังดาวพระเคราะห์ (พลังสะท้อนจากเลขรวม):</h4>
+                        <div className="bg-primary-50 border border-primary-200 p-4 rounded-xl">
+                          <div className="font-bold text-primary-900 text-lg mb-1">{planetPowerPredictions[total].title} (กำลัง {total})</div>
+                          <div className="text-sm text-slate-700">{planetPowerPredictions[total].desc}</div>
+                        </div>
+                     </div>
+                  )}
+                </div>
+              )}
+
+              {/* Kalakinee */}
+              {dayIdx !== null && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-accent-400"></div>
+                  <h3 className="text-base font-bold text-primary-900 mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    ตรวจอักษรกาลกิณี
+                  </h3>
+                  <div className="text-sm text-primary-800 mb-4 pl-7">
+                    วันเกิด: <span className="font-bold text-primary-900">วัน{kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.day}</span>
+                    <span className="mx-2 text-primary-300">|</span>
+                    ควรหลีกเลี่ยง: <span className="font-bold text-accent-600">{dayIdx === 1 ? "สระทั้งหมด (ยกเว้นไม้หันอากาศและการันต์)" : kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.chars.join(" ")}</span>
+                  </div>
+                  
+                  <div className="pl-7">
+                    {(badInFirst.length === 0 && badInLast.length === 0) ? (
+                      <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        ดีเยี่ยม! ไม่พบอักษรกาลกิณีในชื่อและนามสกุล
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {badInFirst.length > 0 && (
+                          <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            พบในชื่อ: <strong className="text-accent-800">{badInFirst.join(", ")}</strong>
+                          </div>
+                        )}
+                        {badInLast.length > 0 && (
+                          <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            พบในนามสกุล: <strong className="text-accent-800">{badInLast.join(", ")}</strong>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div className="text-center pt-8 pb-4">
+                <p className="text-xs sm:text-sm text-primary-600 max-w-lg mx-auto leading-relaxed">
+                  * เลขศาสตร์และหลักเกณฑ์เหล่านี้เป็นเพียงทางเลือกหนึ่งในการพิจารณาหาชื่อมงคลเท่านั้น ชะตาชีวิตยังต้องพึ่งพากรรมดีและการปฏิบัติตนของท่านเอง
+                </p>
+              </div>
+
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}

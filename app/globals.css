@@ -1,0 +1,55 @@
+@import "tailwindcss";
+
+:root {
+  --background: #F5F5DC;
+  --foreground: #28261c;
+}
+
+@theme {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-noto-sans-thai);
+  --font-mono: var(--font-noto-sans-mono);
+  
+  --color-primary-50: #f6f5f0;
+  --color-primary-100: #eceae1;
+  --color-primary-200: #dad5c3;
+  --color-primary-300: #c7bfa5;
+  --color-primary-400: #b9b28f;
+  --color-primary-500: #B2AC88;
+  --color-primary-600: #98926c;
+  --color-primary-700: #7b7556;
+  --color-primary-800: #625d45;
+  --color-primary-900: #4f4a38;
+  --color-primary-950: #28261c;
+
+  --color-secondary-50: #fefdfb;
+  --color-secondary-100: #fdfdf5;
+  --color-secondary-200: #faf8e7;
+  --color-secondary-300: #f7f3d3;
+  --color-secondary-400: #f5eebd;
+  --color-secondary-500: #F5F5DC;
+  --color-secondary-600: #d6ca9b;
+  --color-secondary-700: #ad9a5f;
+  --color-secondary-800: #8c7949;
+  --color-secondary-900: #705e3b;
+  --color-secondary-950: #3f331d;
+
+  --color-accent-50: #fcf1ef;
+  --color-accent-100: #fadad4;
+  --color-accent-200: #f6b5a9;
+  --color-accent-300: #f1907e;
+  --color-accent-400: #e66a52;
+  --color-accent-500: #E2725B;
+  --color-accent-600: #ca4a31;
+  --color-accent-700: #a93a23;
+  --color-accent-800: #8d3320;
+  --color-accent-900: #752f20;
+  --color-accent-950: #3f150c;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-noto-sans-thai), 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
+}
