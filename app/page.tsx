@@ -61,7 +61,9 @@ export default function App() {
     return calcFromParams(p.get("fn") ?? "", p.get("ln") ?? "", p.get("bd") ?? "");
   });
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
 
@@ -97,6 +99,21 @@ export default function App() {
     const badInLast = dayIdx !== null && lastName.trim() ? checkKalakinee(lastName.trim(), dayIdx) : [];
     setResult({ fn, ln, total, dayIdx, badInFirst, badInLast });
     setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }
+
+  async function saveAsImage() {
+    if (!shareCardRef.current) return;
+    setSaving(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const dataUrl = await toPng(shareCardRef.current, { pixelRatio: 2 });
+      const link = document.createElement("a");
+      link.download = `เลขศาสตร์${fullName ? `-${fullName}` : ""}.png`;
+      link.href = dataUrl;
+      link.click();
+    } finally {
+      setSaving(false);
+    }
   }
 
   function getNumPred(n: number): { title: string; text: string; score: number } {
@@ -440,6 +457,7 @@ export default function App() {
               )}
 
               <div className="text-center pt-8 pb-4 space-y-4">
+                <div className="flex items-center justify-center gap-3 flex-wrap">
                 <button
                   onClick={share}
                   className="inline-flex items-center gap-2 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-xl py-2.5 px-5 shadow-md transition-all active:scale-[0.98] cursor-pointer"
@@ -460,6 +478,29 @@ export default function App() {
                     </>
                   )}
                 </button>
+                <button
+                  onClick={saveAsImage}
+                  disabled={saving}
+                  className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-semibold rounded-xl py-2.5 px-5 shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  {saving ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+                      </svg>
+                      กำลังบันทึก...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      บันทึกเป็นรูป
+                    </>
+                  )}
+                </button>
+                </div>
                 <p className="text-xs sm:text-sm text-primary-600 max-w-lg mx-auto leading-relaxed">
                   * เลขศาสตร์และหลักเกณฑ์เหล่านี้เป็นเพียงทางเลือกหนึ่งในการพิจารณาหาชื่อมงคลเท่านั้น ชะตาชีวิตยังต้องพึ่งพากรรมดีและการปฏิบัติตนของท่านเอง
                 </p>
@@ -469,6 +510,110 @@ export default function App() {
           );
         })()}
       </div>
+
+      {/* Share card — hidden off-screen, captured by saveAsImage */}
+      {result && (() => {
+        const { fn, ln, total, dayIdx, badInFirst, badInLast } = result;
+        const fnInfo = getNumPred(fn.sum);
+        const lnInfo = ln ? getNumPred(ln.sum) : null;
+        const totalInfo = getNumPred(total);
+        const scoreColor = (s: number) => s >= 4 ? "#059669" : s >= 3 ? "#d97706" : "#dc2626";
+        const scoreBg = (s: number) => s >= 4 ? "#d1fae5" : s >= 3 ? "#fef3c7" : "#fee2e2";
+        const kalaOk = badInFirst.length === 0 && badInLast.length === 0;
+
+        return (
+          <div
+            ref={shareCardRef}
+            style={{
+              position: "fixed", top: 0, left: 0, zIndex: -1, pointerEvents: "none",
+              width: 600, fontFamily: "'Noto Sans Thai', 'Sarabun', sans-serif",
+              background: "linear-gradient(135deg, #eceae1 0%, #fdfdf5 60%, #F5F5DC 100%)",
+              padding: 32, boxSizing: "border-box",
+            }}
+          >
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+              <div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: "#28261c" }}>เลขศาสตร์</div>
+                <div style={{ fontSize: 12, color: "#98926c", marginTop: 2 }}>name.mhalong.com</div>
+              </div>
+              {fullName && (
+                <div style={{ fontSize: 20, fontWeight: 700, color: "#28261c", textAlign: "right" }}>{fullName}</div>
+              )}
+            </div>
+
+            {/* Score Cards */}
+            <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+              <div style={{ flex: 1, background: "#fefdfb", borderRadius: 16, padding: "16px 12px", textAlign: "center", border: "1px solid #dad5c3" }}>
+                <div style={{ fontSize: 11, color: "#7b7556", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 }}>เลขชื่อ</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: "#28261c", lineHeight: 1 }}>{fn.sum}</div>
+                <div style={{ fontSize: 12, color: "#625d45", marginTop: 6 }}>{fnInfo.title}</div>
+                <div style={{ display: "inline-block", marginTop: 6, padding: "2px 10px", borderRadius: 99, fontSize: 11, fontWeight: 700, background: scoreBg(fnInfo.score), color: scoreColor(fnInfo.score) }}>★ {fnInfo.score}/5</div>
+              </div>
+              {ln && lnInfo && (
+                <div style={{ flex: 1, background: "#fefdfb", borderRadius: 16, padding: "16px 12px", textAlign: "center", border: "1px solid #dad5c3" }}>
+                  <div style={{ fontSize: 11, color: "#7b7556", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 }}>เลขนามสกุล</div>
+                  <div style={{ fontSize: 36, fontWeight: 800, color: "#28261c", lineHeight: 1 }}>{ln.sum}</div>
+                  <div style={{ fontSize: 12, color: "#625d45", marginTop: 6 }}>{lnInfo.title}</div>
+                  <div style={{ display: "inline-block", marginTop: 6, padding: "2px 10px", borderRadius: 99, fontSize: 11, fontWeight: 700, background: scoreBg(lnInfo.score), color: scoreColor(lnInfo.score) }}>★ {lnInfo.score}/5</div>
+                </div>
+              )}
+              <div style={{ flex: 1, background: "#98926c", borderRadius: 16, padding: "16px 12px", textAlign: "center", border: "1px solid #7b7556" }}>
+                <div style={{ fontSize: 11, color: "#eceae1", fontWeight: 600, marginBottom: 4, textTransform: "uppercase", letterSpacing: 1 }}>เลขรวม</div>
+                <div style={{ fontSize: 36, fontWeight: 800, color: "#fff", lineHeight: 1 }}>{total}</div>
+                <div style={{ fontSize: 12, color: "#f6f5f0", marginTop: 6 }}>{totalInfo.title}</div>
+                <div style={{ display: "inline-block", marginTop: 6, padding: "2px 10px", borderRadius: 99, fontSize: 11, fontWeight: 700, background: "rgba(255,255,255,0.25)", color: "#fff" }}>★ {totalInfo.score}/5</div>
+              </div>
+            </div>
+
+            {/* Predictions */}
+            {[
+              { label: "คำทำนายเลขชื่อ", info: fnInfo, highlight: false },
+              ...(ln && lnInfo ? [{ label: "คำทำนายเลขนามสกุล", info: lnInfo, highlight: false }] : []),
+              { label: "คำทำนายเลขรวม", info: totalInfo, highlight: true },
+            ].map((item, i) => (
+              <div key={i} style={{
+                background: item.highlight ? "#eceae1" : "#fefdfb",
+                borderRadius: 16, padding: 20, marginBottom: 12,
+                border: item.highlight ? "1.5px solid #b9b28f" : "1.5px solid #dad5c3",
+              }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "#28261c", marginBottom: 6 }}>
+                  {item.label} — {item.info.title}
+                </div>
+                <div style={{ fontSize: 12, color: "#4f4a38", lineHeight: 1.8 }}>{item.info.text}</div>
+              </div>
+            ))}
+
+            {/* Kalakinee */}
+            {dayIdx !== null && (
+              <div style={{
+                borderRadius: 16, padding: "14px 18px",
+                background: kalaOk ? "#f0fdf4" : "#fff7ed",
+                border: `1.5px solid ${kalaOk ? "#86efac" : "#fdba74"}`,
+                display: "flex", alignItems: "center", gap: 12, marginBottom: 16,
+              }}>
+                <div style={{ fontSize: 22 }}>{kalaOk ? "✅" : "⚠️"}</div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: kalaOk ? "#166534" : "#9a3412" }}>
+                    {kalaOk ? "ไม่พบอักษรกาลกิณี" : "พบอักษรกาลกิณี"}
+                  </div>
+                  {!kalaOk && (
+                    <div style={{ fontSize: 12, color: "#9a3412", marginTop: 2 }}>
+                      {badInFirst.length > 0 && `ชื่อ: ${badInFirst.join(", ")}  `}
+                      {badInLast.length > 0 && `นามสกุล: ${badInLast.join(", ")}`}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div style={{ textAlign: "center", fontSize: 11, color: "#98926c", marginTop: 8 }}>
+              name.mhalong.com · คำนวณเลขศาสตร์ออนไลน์
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
