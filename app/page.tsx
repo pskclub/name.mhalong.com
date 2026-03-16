@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import {
   calcName,
@@ -61,6 +61,7 @@ export default function App() {
     return calcFromParams(p.get("fn") ?? "", p.get("ln") ?? "", p.get("bd") ?? "");
   });
   const [copied, setCopied] = useState(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const fullName = [firstName.trim(), lastName.trim()].filter(Boolean).join(" ");
 
@@ -95,6 +96,7 @@ export default function App() {
     const badInFirst = dayIdx !== null ? checkKalakinee(firstName.trim(), dayIdx) : [];
     const badInLast = dayIdx !== null && lastName.trim() ? checkKalakinee(lastName.trim(), dayIdx) : [];
     setResult({ fn, ln, total, dayIdx, badInFirst, badInLast });
+    setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
 
   function getNumPred(n: number): { title: string; text: string; score: number } {
@@ -183,8 +185,19 @@ export default function App() {
           const lnInfo = ln ? getNumPred(ln.sum) : null;
           const totalInfo = getNumPred(total);
 
+          function ScoreBadge({ score }: { score: number }) {
+            const color = score >= 4 ? "bg-emerald-100 text-emerald-700 border-emerald-200"
+              : score >= 3 ? "bg-amber-100 text-amber-700 border-amber-200"
+              : "bg-red-100 text-red-600 border-red-200";
+            return (
+              <span className={`text-xs font-bold px-2 py-0.5 rounded-full border mt-2 inline-block ${color}`}>
+                ★ {score}/5
+              </span>
+            );
+          }
+
           return (
-            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div ref={resultsRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 scroll-mt-6">
               
               {/* Summary Cards */}
               <div className={`grid grid-cols-1 ${ln ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
@@ -192,23 +205,73 @@ export default function App() {
                   <div className="text-primary-600 text-xs font-medium uppercase tracking-wider mb-1">เลขชื่อ</div>
                   <div className="text-4xl font-bold text-primary-900">{fn.sum}</div>
                   <div className="text-sm font-medium text-primary-700 mt-2">{fnInfo?.title}</div>
+                  <ScoreBadge score={fnInfo.score} />
                 </div>
-                
+
                 {ln && (
                   <div className="bg-white rounded-2xl p-5 shadow-sm border border-primary-200 flex flex-col items-center justify-center text-center">
                     <div className="text-primary-600 text-xs font-medium uppercase tracking-wider mb-1">เลขนามสกุล</div>
                     <div className="text-4xl font-bold text-primary-900">{ln.sum}</div>
                     <div className="text-sm font-medium text-primary-700 mt-2">{lnInfo?.title}</div>
+                    <ScoreBadge score={lnInfo!.score} />
                   </div>
                 )}
-                
+
                 <div className="bg-primary-600 rounded-2xl p-5 shadow-md shadow-primary-200 border border-primary-500 flex flex-col items-center justify-center text-center text-white relative overflow-hidden">
                   <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
                   <div className="text-primary-50 text-xs font-medium uppercase tracking-wider mb-1 relative z-10">เลขรวม</div>
                   <div className="text-4xl font-bold relative z-10">{total}</div>
                   <div className="text-sm font-medium text-primary-100 mt-2 relative z-10">{totalInfo?.title}</div>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full border mt-2 inline-block bg-white/20 text-white border-white/30">★ {totalInfo.score}/5</span>
                 </div>
               </div>
+
+              {/* Kalakinee */}
+              {dayIdx !== null && (
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200 relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-accent-400"></div>
+                  <h3 className="text-base font-bold text-primary-900 mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent-500" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    ตรวจอักษรกาลกิณี
+                  </h3>
+                  <div className="text-sm text-primary-800 mb-4 pl-7">
+                    วันเกิด: <span className="font-bold text-primary-900">วัน{kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.day}</span>
+                    <span className="mx-2 text-primary-300">|</span>
+                    ควรหลีกเลี่ยง: <span className="font-bold text-accent-600">{dayIdx === 1 ? "สระทั้งหมด (ยกเว้นไม้หันอากาศและการันต์)" : kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.chars.join(" ")}</span>
+                  </div>
+                  <div className="pl-7">
+                    {(badInFirst.length === 0 && badInLast.length === 0) ? (
+                      <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        ดีเยี่ยม! ไม่พบอักษรกาลกิณีในชื่อและนามสกุล
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {badInFirst.length > 0 && (
+                          <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            พบในชื่อ: <strong className="text-accent-800">{badInFirst.join(", ")}</strong>
+                          </div>
+                        )}
+                        {badInLast.length > 0 && (
+                          <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
+                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                            </svg>
+                            พบในนามสกุล: <strong className="text-accent-800">{badInLast.join(", ")}</strong>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Breakdown */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200">
@@ -373,54 +436,6 @@ export default function App() {
                         </div>
                      </div>
                   )}
-                </div>
-              )}
-
-              {/* Kalakinee */}
-              {dayIdx !== null && (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-accent-400"></div>
-                  <h3 className="text-base font-bold text-primary-900 mb-2 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    ตรวจอักษรกาลกิณี
-                  </h3>
-                  <div className="text-sm text-primary-800 mb-4 pl-7">
-                    วันเกิด: <span className="font-bold text-primary-900">วัน{kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.day}</span>
-                    <span className="mx-2 text-primary-300">|</span>
-                    ควรหลีกเลี่ยง: <span className="font-bold text-accent-600">{dayIdx === 1 ? "สระทั้งหมด (ยกเว้นไม้หันอากาศและการันต์)" : kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.chars.join(" ")}</span>
-                  </div>
-                  
-                  <div className="pl-7">
-                    {(badInFirst.length === 0 && badInLast.length === 0) ? (
-                      <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        ดีเยี่ยม! ไม่พบอักษรกาลกิณีในชื่อและนามสกุล
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {badInFirst.length > 0 && (
-                          <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                            พบในชื่อ: <strong className="text-accent-800">{badInFirst.join(", ")}</strong>
-                          </div>
-                        )}
-                        {badInLast.length > 0 && (
-                          <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                            พบในนามสกุล: <strong className="text-accent-800">{badInLast.join(", ")}</strong>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
                 </div>
               )}
 
