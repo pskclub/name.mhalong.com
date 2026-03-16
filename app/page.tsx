@@ -79,18 +79,20 @@ export default function App() {
               <input 
                 className="w-full bg-secondary-50 border border-primary-300 text-slate-900 rounded-xl px-4 py-3 outline-none transition-all focus:ring-2 focus:ring-primary-400/50 focus:border-primary-500 focus:bg-white placeholder:text-slate-400"
                 value={firstName} 
-                onChange={e => setFirstName(e.target.value)} 
-                placeholder="เช่น มิลิน" 
+                onChange={e => setFirstName(e.target.value.replace(/[^ก-๙\s]/g, ''))} 
+                placeholder="เช่น ธันยพร" 
               />
+              <p className="text-[11px] text-slate-500 mt-1">* กรุณากรอกเฉพาะตัวอักษรภาษาไทยเท่านั้น</p>
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-primary-800">นามสกุล (ภาษาไทย)</label>
               <input 
                 className="w-full bg-secondary-50 border border-primary-300 text-slate-900 rounded-xl px-4 py-3 outline-none transition-all focus:ring-2 focus:ring-primary-400/50 focus:border-primary-500 focus:bg-white placeholder:text-slate-400"
                 value={lastName} 
-                onChange={e => setLastName(e.target.value)} 
-                placeholder="เช่น ถิ่นไทใจดี" 
+                onChange={e => setLastName(e.target.value.replace(/[^ก-๙\s]/g, ''))} 
+                placeholder="เช่น พุทธสุวรรณ" 
               />
+              <p className="text-[11px] text-slate-500 mt-1">* หากไม่มีเว้นว่างไว้ได้</p>
             </div>
           </div>
 
