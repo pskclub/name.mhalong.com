@@ -48,6 +48,7 @@
   --color-accent-950: #3f150c;
 }
 
+.bg,
 body {
   background: #F7F3D3;
   background-image: linear-gradient(345deg,
@@ -64,6 +65,9 @@ body {
       hsl(53deg 72% 88%) 76%,
       hsl(53deg 73% 87%) 84%,
       hsl(52deg 74% 85%) 100%);
+}
+
+body {
   color: var(--foreground);
   font-family: var(--font-noto-sans-thai), 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
 }

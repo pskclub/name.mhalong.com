@@ -126,7 +126,7 @@ export default function App() {
 
 
   return (
-    <div className="min-h-screen  text-slate-800 p-4 sm:p-8 font-sans">
+    <div className="min-h-screen text-slate-800 p-4 sm:p-8 font-sans bg">
       <div className="max-w-2xl mx-auto space-y-8">
         
         {/* Header Section */}
@@ -323,7 +323,7 @@ export default function App() {
                 {[
                   { label: `คำทำนายเลขชื่อ`, num: fn.sum, info: fnInfo, highlight: false },
                   ...(ln ? [{ label: `คำทำนายเลขนามสกุล`, num: ln.sum, info: lnInfo, highlight: false }] : []),
-                  { label: `คำทำนายเลขรวม`, num: total, info: totalInfo, highlight: true },
+                  { label: `คำทำนายเลขรวม`, num: total, info: totalInfo, highlight: false },
                 ].map((item, idx) => (
                   <div key={idx} className={`rounded-2xl p-6 transition-all ${
                     item.highlight 
@@ -526,6 +526,16 @@ export default function App() {
           );
         })()}
       </div>
+      
+      <footer className="mt-16 pb-12 text-center">
+        <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/40 backdrop-blur-md border border-primary-200/50 shadow-sm hover:shadow-md transition-all duration-300 group">
+          <span className="text-primary-800 text-sm font-medium">Made with</span>
+          <span className="inline-block text-secondary-600 group-hover:scale-125 transition-transform duration-300">❤️</span>
+          <span className="text-primary-800 text-sm font-medium">for everyone By</span>
+          <span className="text-primary-950 font-bold text-sm tracking-tight border-secondary-400 group-hover:border-secondary-500 transition-colors">PskCluB</span>
+        </div>
+      </footer>
+
 
       {/* Share card — hidden off-screen, captured by saveAsImage */}
       {result && (() => {
@@ -540,10 +550,10 @@ export default function App() {
         return (
           <div
             ref={shareCardRef}
+            className="bg"
             style={{
               position: "fixed", top: 0, left: 0, zIndex: -1, pointerEvents: "none",
               width: 600, fontFamily: "'Noto Sans Thai', 'Sarabun', sans-serif",
-              background: "linear-gradient(135deg, #eceae1 0%, #fdfdf5 60%, #F5F5DC 100%)",
               padding: 32, boxSizing: "border-box",
             }}
           >
