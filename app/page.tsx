@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import DatePicker from "./components/DatePicker";
 
 import {
   calcName,
@@ -10,6 +11,12 @@ import {
   getTaksaCategory,
   taksaDefinitions,
   planetPowerPredictions,
+  luckyColorMap,
+  luckyDirectionMap,
+  calcLifePath,
+  lifePathPredictions,
+  calcZodiac,
+  zodiacMap,
   type PredictionDetail,
 } from "./lib/numerology";
 
@@ -30,17 +37,38 @@ interface ResultType {
   dayIdx: number | null;
   badInFirst: string[];
   badInLast: string[];
+  lifePath: number | null;
+  zodiac: number | null;
 }
 
-function calcFromParams(fn: string, ln: string, bd: string): ResultType | null {
+// แปลง date string (YYYY-MM-DD) → dayIdx ของ kalakineeMap
+function getDayIdxFromDate(dateStr: string, wednesdayNight: boolean): number | null {
+  if (!dateStr) return null;
+  const date = new Date(dateStr + "T12:00:00");
+  if (isNaN(date.getTime())) return null;
+  // JS getDay: 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+  const map: Record<number, number> = { 0: 0, 1: 1, 2: 2, 3: wednesdayNight ? 4 : 3, 4: 5, 5: 6, 6: 7 };
+  return map[date.getDay()] ?? null;
+}
+
+function calcFromParams(fn: string, ln: string, birthDate: string, wednesdayNight: boolean): ResultType | null {
   if (!fn.trim()) return null;
   const fnResult = calcName(fn.trim());
   const lnResult = ln.trim() ? calcName(ln.trim()) : null;
   const total = lnResult ? fnResult.sum + lnResult.sum : fnResult.sum;
-  const dayIdx = bd !== "" ? parseInt(bd, 10) : null;
+  const dayIdx = getDayIdxFromDate(birthDate, wednesdayNight);
   const badInFirst = dayIdx !== null ? checkKalakinee(fn.trim(), dayIdx) : [];
   const badInLast = dayIdx !== null && ln.trim() ? checkKalakinee(ln.trim(), dayIdx) : [];
-  return { fn: fnResult, ln: lnResult, total, dayIdx, badInFirst, badInLast };
+  let lifePath: number | null = null;
+  let zodiac: number | null = null;
+  if (birthDate) {
+    const parts = birthDate.split("-").map(Number);
+    if (parts.length === 3 && parts[0] > 999 && parts[1] > 0 && parts[2] > 0) {
+      lifePath = calcLifePath(parts[2], parts[1], parts[0]);
+      zodiac = calcZodiac(parts[0]);
+    }
+  }
+  return { fn: fnResult, ln: lnResult, total, dayIdx, badInFirst, badInLast, lifePath, zodiac };
 }
 
 export default function App() {
@@ -52,15 +80,20 @@ export default function App() {
     if (typeof window === "undefined") return "";
     return new URLSearchParams(window.location.search).get("ln") ?? "";
   });
-  const [birthDay, setBirthDay] = useState(() => {
+  const [birthDate, setBirthDate] = useState(() => {
     if (typeof window === "undefined") return "";
-    return new URLSearchParams(window.location.search).get("bd") ?? "";
+    return new URLSearchParams(window.location.search).get("bdate") ?? "";
+  });
+  const [wednesdayNight, setWednesdayNight] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return new URLSearchParams(window.location.search).get("bdn") === "1";
   });
   const [result, setResult] = useState<ResultType | null>(() => {
     if (typeof window === "undefined") return null;
     const p = new URLSearchParams(window.location.search);
-    return calcFromParams(p.get("fn") ?? "", p.get("ln") ?? "", p.get("bd") ?? "");
+    return calcFromParams(p.get("fn") ?? "", p.get("ln") ?? "", p.get("bdate") ?? "", p.get("bdn") === "1");
   });
+  const [activeTab, setActiveTab] = useState("numerology");
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -78,7 +111,8 @@ export default function App() {
     const params = new URLSearchParams();
     if (firstName.trim()) params.set("fn", firstName.trim());
     if (lastName.trim()) params.set("ln", lastName.trim());
-    if (birthDay) params.set("bd", birthDay);
+    if (birthDate) params.set("bdate", birthDate);
+    if (wednesdayNight) params.set("bdn", "1");
     const url = `${window.location.origin}${window.location.pathname}?${params.toString()}`;
     if (navigator.share) {
       navigator.share({ title: `ผลเลขศาสตร์ ${fullName ? ` ${fullName} | ดูดวงชื่อ-นามสกุล วันนี้ดวงเป็นยังไง? มาเช็กกับมหาหลง` : "ดูดวงชื่อ-นามสกุล วันนี้ดวงเป็นยังไง? มาเช็กกับมหาหลง"}`, url });
@@ -92,13 +126,10 @@ export default function App() {
 
   function calculate() {
     if (!firstName.trim()) return;
-    const fn = calcName(firstName.trim());
-    const ln = lastName.trim() ? calcName(lastName.trim()) : null;
-    const total = ln ? fn.sum + ln.sum : fn.sum;
-    const dayIdx = birthDay !== "" ? parseInt(birthDay, 10) : null;
-    const badInFirst = dayIdx !== null ? checkKalakinee(firstName.trim(), dayIdx) : [];
-    const badInLast = dayIdx !== null && lastName.trim() ? checkKalakinee(lastName.trim(), dayIdx) : [];
-    setResult({ fn, ln, total, dayIdx, badInFirst, badInLast });
+    const res = calcFromParams(firstName, lastName, birthDate, wednesdayNight);
+    if (!res) return;
+    setResult(res);
+    setActiveTab("numerology");
     setTimeout(() => resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
 
@@ -145,7 +176,7 @@ export default function App() {
             e.preventDefault();
             calculate();
           }}
-          className="bg-white rounded-3xl shadow-xl shadow-secondary-200/50 p-6 sm:p-8 border border-primary-200 backdrop-blur-sm transition-all"
+          className="bg-white rounded-3xl shadow-xl shadow-secondary-200/50 p-6 sm:p-8 border border-primary-200 transition-all"
         >
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
             <div className="space-y-2">
@@ -170,19 +201,64 @@ export default function App() {
             </div>
           </div>
 
-          <div className="space-y-2 mb-8">
-            <label className="block text-sm font-semibold text-primary-800">วันเกิด <span className="text-primary-600 font-normal">(สำหรับตรวจอักษรกาลกิณี)</span></label>
-            <select
-              className="w-full sm:w-1/2 bg-secondary-50 border border-primary-300 text-slate-900 rounded-xl px-4 py-3 outline-none transition-all focus:ring-2 focus:ring-primary-400/50 focus:border-primary-500 focus:bg-white"
-              value={birthDay} 
-              onChange={e => setBirthDay(e.target.value)} 
-            >
-              <option value="">-- เลือกวันเกิด --</option>
-              {Object.entries(kalakineeMap).map(([idx, data]) => (
-                <option key={idx} value={idx}>{data.day}</option>
-              ))}
-            </select>
-          </div>
+          {/* วันเดือนปีเกิด — input เดียว */}
+          {(() => {
+            const isWednesday = birthDate ? new Date(birthDate + "T12:00:00").getDay() === 3 : false;
+            const computedDayIdx = getDayIdxFromDate(birthDate, wednesdayNight);
+            const dayName = computedDayIdx !== null
+              ? `วัน${kalakineeMap[computedDayIdx as keyof typeof kalakineeMap]?.day}`
+              : null;
+            return (
+              <div className="space-y-3 mb-8">
+                <label className="block text-sm font-semibold text-primary-800">
+                  วันเดือนปีเกิด
+                  <span className="text-primary-600 font-normal ml-1">(สำหรับกาลกิณี ทักษา สีมงคล และเลขชะตา)</span>
+                </label>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <DatePicker
+                    value={birthDate}
+                    onChange={v => { setBirthDate(v); setWednesdayNight(false); }}
+                  />
+                  {dayName && (
+                    <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-primary-700 bg-primary-50 border border-primary-200 rounded-full px-3 py-1.5">
+                      <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      {dayName}
+                    </span>
+                  )}
+                </div>
+                {/* Toggle เฉพาะวันพุธ */}
+                {isWednesday && (
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setWednesdayNight(false)}
+                      className={`flex-1 py-2 px-3 rounded-xl text-sm font-semibold border transition-all cursor-pointer ${
+                        !wednesdayNight
+                          ? "bg-primary-600 text-white border-primary-600 shadow-sm"
+                          : "bg-secondary-50 text-primary-700 border-primary-300 hover:bg-primary-50"
+                      }`}
+                    >
+                      ☀️ เกิดกลางวัน (พุธ)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setWednesdayNight(true)}
+                      className={`flex-1 py-2 px-3 rounded-xl text-sm font-semibold border transition-all cursor-pointer ${
+                        wednesdayNight
+                          ? "bg-primary-600 text-white border-primary-600 shadow-sm"
+                          : "bg-secondary-50 text-primary-700 border-primary-300 hover:bg-primary-50"
+                      }`}
+                    >
+                      🌙 เกิดกลางคืน (ราหู)
+                    </button>
+                  </div>
+                )}
+                <p className="text-[11px] text-slate-500">
+                  * ใส่ปีเป็น ค.ศ. เช่น เกิด พ.ศ. 2533 → ใส่ค.ศ. 1990
+                </p>
+              </div>
+            );
+          })()}
 
           <button 
             type="submit" 
@@ -198,7 +274,7 @@ export default function App() {
 
         {/* Results Section */}
         {result && (() => {
-          const { fn, ln, total, dayIdx, badInFirst } = result;
+          const { fn, ln, total, dayIdx, badInFirst, lifePath, zodiac } = result;
           const fnInfo = getNumPred(fn.sum);
           const lnInfo = ln ? getNumPred(ln.sum) : null;
           const totalInfo = getNumPred(total);
@@ -216,7 +292,39 @@ export default function App() {
 
           return (
             <div ref={resultsRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 scroll-mt-6">
-              
+
+          {/* Tab nav */}
+          {(() => {
+            const tabs = [
+              { id: "numerology", label: "เลขศาสตร์", icon: "🔢" },
+              ...(dayIdx !== null ? [{ id: "kalakinee", label: "กาลกิณี & ทักษา", icon: "📖" }] : []),
+              ...(dayIdx !== null ? [{ id: "lucky", label: "มงคล", icon: "✨" }] : []),
+              ...(lifePath !== null ? [{ id: "lifepath", label: "เลขชะตา", icon: "🌟" }] : []),
+              ...(zodiac !== null ? [{ id: "zodiac", label: "นักษัตร", icon: "🐾" }] : []),
+            ];
+            return (
+              <div className="flex gap-1 bg-primary-50 border border-primary-200 rounded-2xl p-1.5 overflow-x-auto">
+                {tabs.map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex-1 min-w-fit whitespace-nowrap flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition-all cursor-pointer ${
+                      activeTab === tab.id
+                        ? "bg-white text-primary-900 shadow-sm border border-primary-200"
+                        : "text-primary-600 hover:text-primary-800 hover:bg-white/50"
+                    }`}
+                  >
+                    <span>{tab.icon}</span>
+                    <span>{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* Tab: เลขศาสตร์ */}
+          {activeTab === "numerology" && (
+            <div className="space-y-6">
               {/* Summary Cards */}
               <div className={`grid grid-cols-1 ${ln ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-4`}>
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-primary-200 flex flex-col items-center justify-center text-center">
@@ -225,7 +333,6 @@ export default function App() {
                   <div className="text-sm font-medium text-primary-700 mt-2">{fnInfo?.title}</div>
                   <ScoreBadge score={fnInfo.score} />
                 </div>
-
                 {ln && (
                   <div className="bg-white rounded-2xl p-5 shadow-sm border border-primary-200 flex flex-col items-center justify-center text-center">
                     <div className="text-primary-600 text-xs font-medium uppercase tracking-wider mb-1">เลขนามสกุล</div>
@@ -234,7 +341,6 @@ export default function App() {
                     <ScoreBadge score={lnInfo!.score} />
                   </div>
                 )}
-
                 <div className="bg-primary-600 rounded-2xl p-5 shadow-md shadow-primary-200 border border-primary-500 flex flex-col items-center justify-center text-center text-white relative overflow-hidden">
                   <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-xl"></div>
                   <div className="text-primary-50 text-xs font-medium uppercase tracking-wider mb-1 relative z-10">เลขรวม</div>
@@ -243,41 +349,6 @@ export default function App() {
                   <span className="text-xs font-bold px-2 py-0.5 rounded-full border mt-2 inline-block bg-white/20 text-white border-white/30">★ {totalInfo.score}/5</span>
                 </div>
               </div>
-
-              {/* Kalakinee */}
-              {dayIdx !== null && (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200 relative overflow-hidden">
-                  <div className="absolute top-0 left-0 w-1 h-full bg-accent-400"></div>
-                  <h3 className="text-base font-bold text-primary-900 mb-2 flex items-center gap-2">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    ตรวจอักษรกาลกิณี
-                  </h3>
-                  <div className="text-sm text-primary-800 mb-4 pl-7">
-                    วันเกิด: <span className="font-bold text-primary-900">วัน{kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.day}</span>
-                    <span className="mx-2 text-primary-300">|</span>
-                    ควรหลีกเลี่ยง: <span className="font-bold text-accent-600">{dayIdx === 1 ? "สระทั้งหมด (ยกเว้นไม้หันอากาศและการันต์)" : kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.chars.join(" ")}</span>
-                  </div>
-                  <div className="pl-7">
-                    {badInFirst.length === 0 ? (
-                      <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        ดีเยี่ยม! ไม่พบอักษรกาลกิณีในชื่อ
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                        พบในชื่อ: <strong className="text-accent-800">{badInFirst.join(", ")}</strong>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Breakdown */}
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200">
@@ -300,7 +371,6 @@ export default function App() {
                       <span className="ml-2 text-sm font-medium text-slate-600">= <strong className="text-accent-600 text-xl font-bold ml-1">{fn.sum}</strong></span>
                     </div>
                   </div>
-                  
                   {ln && (
                     <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-primary-100">
                       <span className="text-sm font-semibold text-primary-800 mr-2 min-w-16">นามสกุล:</span>
@@ -321,27 +391,18 @@ export default function App() {
               {/* Predictions */}
               <div className="space-y-4">
                 {[
-                  { label: `คำทำนายเลขชื่อ`, num: fn.sum, info: fnInfo, highlight: false },
-                  ...(ln ? [{ label: `คำทำนายเลขนามสกุล`, num: ln.sum, info: lnInfo, highlight: false }] : []),
-                  { label: `คำทำนายเลขรวม`, num: total, info: totalInfo, highlight: false },
+                  { label: "คำทำนายเลขชื่อ", num: fn.sum, info: fnInfo },
+                  ...(ln ? [{ label: "คำทำนายเลขนามสกุล", num: ln.sum, info: lnInfo }] : []),
+                  { label: "คำทำนายเลขรวม", num: total, info: totalInfo },
                 ].map((item, idx) => (
-                  <div key={idx} className={`rounded-2xl p-6 transition-all ${
-                    item.highlight 
-                      ? "bg-primary-50 border-2 border-primary-300 shadow-sm"
-                      : "bg-white border border-primary-200 shadow-sm"
-                  }`}>
+                  <div key={idx} className="rounded-2xl p-6 bg-white border border-primary-200 shadow-sm">
                     <div className="flex items-start gap-4 mb-3">
-                      <div className={`shrink-0 w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg
-                        ${item.highlight ? "bg-primary-600 text-white shadow-md shadow-primary-200" : "bg-primary-100 text-primary-900"}`}>
+                      <div className="shrink-0 w-12 h-12 rounded-full bg-primary-100 text-primary-900 flex items-center justify-center font-bold text-lg">
                         {item.num}
                       </div>
                       <div className="pt-1">
-                        <h4 className={`font-bold ${item.highlight ? "text-primary-900" : "text-primary-950"}`}>
-                          {item.label}
-                        </h4>
-                        <div className={`text-sm mt-0.5 font-medium ${item.highlight ? "text-primary-700" : "text-primary-600"}`}>
-                          {item.info?.title}
-                        </div>
+                        <h4 className="font-bold text-primary-950">{item.label}</h4>
+                        <div className="text-sm mt-0.5 font-medium text-primary-600">{item.info?.title}</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 mt-3">
@@ -352,38 +413,18 @@ export default function App() {
                         const uid = `half-${idx}-${i}`;
                         return (
                           <svg key={i} xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20">
-                            {half && (
-                              <defs>
-                                <linearGradient id={uid}>
-                                  <stop offset="50%" stopColor="#fbbf24" />
-                                  <stop offset="50%" stopColor="#e2e8f0" />
-                                </linearGradient>
-                              </defs>
-                            )}
-                            <path
-                              fill={filled ? "#fbbf24" : half ? `url(#${uid})` : "#e2e8f0"}
-                              d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                            />
+                            {half && (<defs><linearGradient id={uid}><stop offset="50%" stopColor="#fbbf24" /><stop offset="50%" stopColor="#e2e8f0" /></linearGradient></defs>)}
+                            <path fill={filled ? "#fbbf24" : half ? `url(#${uid})` : "#e2e8f0"} d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                           </svg>
                         );
                       })}
-                      <span className={`ml-1 text-xs font-semibold ${item.highlight ? "text-primary-700" : "text-slate-500"}`}>
-                        {getNumPred(item.num).score}/5
-                      </span>
+                      <span className="ml-1 text-xs font-semibold text-slate-500">{getNumPred(item.num).score}/5</span>
                     </div>
-                    <p className={`text-sm leading-relaxed mt-3 ${item.highlight ? "text-primary-950/90 font-medium" : "text-slate-700"}`}>
-                      {getNumPred(item.num).text}
-                    </p>
-
-                    {/* Alter (อีกตำราหนึ่ง) */}
+                    <p className="text-sm leading-relaxed mt-3 text-slate-700">{getNumPred(item.num).text}</p>
                     <div className="mt-4 pt-4 border-t border-primary-100">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-semibold text-primary-600 bg-primary-50 border border-primary-200 px-2 py-0.5 rounded-full">
-                          อีกตำราหนึ่ง
-                        </span>
-                        <span className={`text-xs font-medium ${item.highlight ? "text-primary-700" : "text-slate-500"}`}>
-                          {getNumPred(item.num).titleAlter}
-                        </span>
+                        <span className="text-xs font-semibold text-primary-600 bg-primary-50 border border-primary-200 px-2 py-0.5 rounded-full">อีกตำราหนึ่ง</span>
+                        <span className="text-xs font-medium text-slate-500">{getNumPred(item.num).titleAlter}</span>
                       </div>
                       <div className="flex items-center gap-1 mb-2">
                         {Array.from({ length: 5 }).map((_, i) => {
@@ -393,84 +434,248 @@ export default function App() {
                           const uid = `half-alt-${idx}-${i}`;
                           return (
                             <svg key={i} xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20">
-                              {half && (
-                                <defs>
-                                  <linearGradient id={uid}>
-                                    <stop offset="50%" stopColor="#fbbf24" />
-                                    <stop offset="50%" stopColor="#e2e8f0" />
-                                  </linearGradient>
-                                </defs>
-                              )}
-                              <path
-                                fill={filled ? "#fbbf24" : half ? `url(#${uid})` : "#e2e8f0"}
-                                d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"
-                              />
+                              {half && (<defs><linearGradient id={uid}><stop offset="50%" stopColor="#fbbf24" /><stop offset="50%" stopColor="#e2e8f0" /></linearGradient></defs>)}
+                              <path fill={filled ? "#fbbf24" : half ? `url(#${uid})` : "#e2e8f0"} d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
                           );
                         })}
-                        <span className={`ml-1 text-xs font-semibold ${item.highlight ? "text-primary-700" : "text-slate-500"}`}>
-                          {getNumPred(item.num).scoreAlter}/5
-                        </span>
+                        <span className="ml-1 text-xs font-semibold text-slate-500">{getNumPred(item.num).scoreAlter}/5</span>
                       </div>
-                      <p className="text-sm leading-relaxed text-slate-600">
-                        {getNumPred(item.num).textAlter}
-                      </p>
+                      <p className="text-sm leading-relaxed text-slate-600">{getNumPred(item.num).textAlter}</p>
                     </div>
                   </div>
                 ))}
               </div>
+            </div>
+          )}
 
-              
+          {/* Tab: กาลกิณี & ทักษา */}
+          {activeTab === "kalakinee" && dayIdx !== null && (
+            <div className="space-y-6">
+              {/* Kalakinee */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-accent-400"></div>
+                <h3 className="text-base font-bold text-primary-900 mb-2 flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-accent-500" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  ตรวจอักษรกาลกิณี
+                </h3>
+                <div className="text-sm text-primary-800 mb-4 pl-7">
+                  วันเกิด: <span className="font-bold text-primary-900">วัน{kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.day}</span>
+                  <span className="mx-2 text-primary-300">|</span>
+                  ควรหลีกเลี่ยง: <span className="font-bold text-accent-600">{dayIdx === 1 ? "สระทั้งหมด (ยกเว้นไม้หันอากาศและการันต์)" : kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.chars.join(" ")}</span>
+                </div>
+                <div className="pl-7">
+                  {badInFirst.length === 0 ? (
+                    <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      ดีเยี่ยม! ไม่พบอักษรกาลกิณีในชื่อ
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      </svg>
+                      พบในชื่อ: <strong className="text-accent-800">{badInFirst.join(", ")}</strong>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-              {/* Taksa Analysis */}
-              {dayIdx !== null && (
-                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200 mt-4">
+              {/* Taksa */}
+              <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200">
+                <h3 className="text-base font-bold text-primary-900 mb-4 flex items-center gap-2">
+                  <svg className="h-5 w-5 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
+                  หลักทักษาปกรณ์ (พลังสะท้อน / พลังเงา)
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-primary-800 mb-2">ชื่อ (ทักษาของแต่ละหมวดอักษร):</h4>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {fn.breakdown.map((x, i) => getTaksaCategory(dayIdx, x.ch) && (
+                        <div key={i} className="flex flex-col items-center bg-primary-50 rounded-lg px-3 py-2 border border-primary-100 shadow-sm">
+                          <span className="text-lg font-bold text-primary-900">{x.ch}</span>
+                          <span className={`text-xs font-bold mt-1 ${getTaksaCategory(dayIdx, x.ch) === "กาลกิณี" ? "text-red-500" : "text-green-600"}`}>
+                            {getTaksaCategory(dayIdx, x.ch)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6">
+                  <h4 className="text-sm font-semibold text-primary-800 mb-3">ความหมายหลักทักษา:</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {Object.entries(taksaDefinitions).map(([key, desc]) => (
+                      <div key={key} className="flex flex-col p-3 rounded bg-secondary-50 border border-secondary-100">
+                        <span className={`text-sm font-bold ${key === "กาลกิณี" ? "text-red-500" : "text-primary-700"}`}>{key}</span>
+                        <span className="text-xs text-slate-600 mt-1">{desc}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {planetPowerPredictions[total] && (
+                  <div className="mt-6 border-t border-primary-100 pt-4">
+                    <h4 className="text-sm font-semibold text-primary-800 mb-3">นิยามความหมายกำลังดาวพระเคราะห์ (พลังสะท้อนจากเลขรวม):</h4>
+                    <div className="bg-primary-50 border border-primary-200 p-4 rounded-xl">
+                      <div className="font-bold text-primary-900 text-lg mb-1">{planetPowerPredictions[total].title} (กำลัง {total})</div>
+                      <div className="text-sm text-slate-700">{planetPowerPredictions[total].desc}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab: มงคล */}
+          {activeTab === "lucky" && dayIdx !== null && (() => {
+            const colorData = luckyColorMap[dayIdx];
+            const dirData = luckyDirectionMap[dayIdx];
+            if (!colorData || !dirData) return null;
+            return (
+              <div className="space-y-6">
+                {/* สีมงคล */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200">
                   <h3 className="text-base font-bold text-primary-900 mb-4 flex items-center gap-2">
-                    <svg className="h-5 w-5 text-accent-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    หลักทักษาปกรณ์ (พลังสะท้อน / พลังเงา)
+                    <span className="text-xl">🎨</span>
+                    สีมงคลประจำวันเกิด
                   </h3>
-                  
-                  <div className="space-y-4">
+                  <div className="flex gap-4 mb-4">
+                    {colorData.colors.map((c, i) => (
+                      <div key={i} className="flex flex-col items-center gap-2">
+                        <div
+                          className="w-16 h-16 rounded-2xl shadow-md border-2 border-white ring-2 ring-primary-100"
+                          style={{ backgroundColor: c.hex }}
+                        />
+                        <span className="text-sm font-semibold text-primary-800">{c.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="bg-primary-50 border border-primary-100 rounded-xl p-4">
+                    <p className="text-sm text-slate-700">{colorData.note}</p>
+                    <p className="text-xs text-slate-500 mt-2">วันเกิด: วัน{kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.day}</p>
+                  </div>
+                </div>
+
+                {/* ทิศมงคล */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200">
+                  <h3 className="text-base font-bold text-primary-900 mb-4 flex items-center gap-2">
+                    <span className="text-xl">🧭</span>
+                    ทิศมงคลประจำวันเกิด
+                  </h3>
+                  <div className="flex items-center gap-6 mb-4">
+                    <div className="w-20 h-20 rounded-full bg-primary-50 border-2 border-primary-200 flex items-center justify-center text-4xl font-bold text-primary-700 shrink-0">
+                      {dirData.icon}
+                    </div>
                     <div>
-                      <h4 className="text-sm font-semibold text-primary-800 mb-2">ชื่อ (ทักษาของแต่ละหมวดอักษร):</h4>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {fn.breakdown.map((x, i) => getTaksaCategory(dayIdx, x.ch) && (
-                          <div key={i} className="flex flex-col items-center bg-primary-50 rounded-lg px-3 py-2 border border-primary-100 shadow-sm">
-                            <span className="text-lg font-bold text-primary-900">{x.ch}</span>
-                            <span className={`text-xs font-bold mt-1 ${getTaksaCategory(dayIdx, x.ch) === "กาลกิณี" ? "text-red-500" : "text-green-600"}`}>
-                              {getTaksaCategory(dayIdx, x.ch)}
-                            </span>
-                          </div>
-                        ))}
+                      <div className="text-2xl font-bold text-primary-900">{dirData.direction}</div>
+                      <div className="text-sm text-slate-500 mt-1">{dirData.en}</div>
+                    </div>
+                  </div>
+                  <div className="bg-primary-50 border border-primary-100 rounded-xl p-4">
+                    <p className="text-sm text-slate-700">ทิศที่เหมาะสำหรับการหันหน้าทำงาน นอนหลับ หรือประกอบพิธีมงคล เพื่อเสริมพลังชีวิตให้ราบรื่น</p>
+                    <p className="text-xs text-slate-500 mt-2">วันเกิด: วัน{kalakineeMap[dayIdx as keyof typeof kalakineeMap]?.day}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Tab: นักษัตร */}
+          {activeTab === "zodiac" && zodiac !== null && (() => {
+            const z = zodiacMap[zodiac];
+            if (!z) return null;
+            return (
+              <div className="space-y-4">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200">
+                  {/* Header */}
+                  <div className="flex items-center gap-5 mb-6">
+                    <div className="shrink-0 w-20 h-20 rounded-full bg-primary-50 border-2 border-primary-200 flex items-center justify-center text-5xl shadow-sm">
+                      {z.emoji}
+                    </div>
+                    <div>
+                      <div className="text-2xl font-bold text-primary-900">ปี{z.name} ({z.animal})</div>
+                      <div className="text-sm text-primary-600 mt-1">ธาตุประจำปี: {z.element}</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="bg-secondary-50 rounded-xl p-4 border border-secondary-100">
+                      <div className="text-xs font-bold text-primary-700 mb-2 uppercase tracking-wide">บุคลิกลักษณะ</div>
+                      <p className="text-sm text-slate-700 leading-relaxed">{z.traits}</p>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                        <div className="text-xs font-bold text-emerald-700 mb-2 uppercase tracking-wide">จุดแข็ง</div>
+                        <p className="text-sm text-slate-700 leading-relaxed">{z.strengths}</p>
+                      </div>
+                      <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                        <div className="text-xs font-bold text-amber-700 mb-2 uppercase tracking-wide">จุดอ่อน</div>
+                        <p className="text-sm text-slate-700 leading-relaxed">{z.weaknesses}</p>
+                      </div>
+                    </div>
+                    <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                      <div className="text-xs font-bold text-blue-700 mb-2 uppercase tracking-wide">โชคชะตาโดยรวม</div>
+                      <p className="text-sm text-slate-700 leading-relaxed">{z.fortune}</p>
+                    </div>
+                    <div className="bg-pink-50 rounded-xl p-4 border border-pink-100">
+                      <div className="text-xs font-bold text-pink-700 mb-2 uppercase tracking-wide">ความรักและความสัมพันธ์</div>
+                      <p className="text-sm text-slate-700 leading-relaxed">{z.love}</p>
+                    </div>
+                    <div className="bg-primary-50 rounded-xl p-4 border border-primary-100 flex items-center gap-3">
+                      <span className="text-2xl">🍀</span>
+                      <div>
+                        <div className="text-xs font-bold text-primary-700 mb-0.5 uppercase tracking-wide">เลขและสีมงคล</div>
+                        <p className="text-sm text-slate-700">{z.lucky}</p>
                       </div>
                     </div>
                   </div>
-                  
-                  <div className="mt-8">
-                      <h4 className="text-sm font-semibold text-primary-800 mb-3">ความหมายหลักทักษา:</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {Object.entries(taksaDefinitions).map(([key, desc]) => (
-                          <div key={key} className="flex flex-col p-3 rounded bg-secondary-50 border border-secondary-100">
-                             <span className={`text-sm font-bold ${key === "กาลกิณี" ? "text-red-500" : "text-primary-700"}`}>{key}</span>
-                             <span className="text-xs text-slate-600 mt-1">{desc}</span>
-                          </div>
-                        ))}
-                      </div>
-                  </div>
-                  
-                  {planetPowerPredictions[total] && (
-                     <div className="mt-8 border-t border-primary-100 pt-4">
-                        <h4 className="text-sm font-semibold text-primary-800 mb-3">นิยามความหมายกำลังดาวพระเคราะห์ (พลังสะท้อนจากเลขรวม):</h4>
-                        <div className="bg-primary-50 border border-primary-200 p-4 rounded-xl">
-                          <div className="font-bold text-primary-900 text-lg mb-1">{planetPowerPredictions[total].title} (กำลัง {total})</div>
-                          <div className="text-sm text-slate-700">{planetPowerPredictions[total].desc}</div>
-                        </div>
-                     </div>
-                  )}
                 </div>
-              )}
+                <p className="text-xs text-center text-slate-500">นักษัตรคำนวณจากปีเกิด (ค.ศ.) วนรอบทุก 12 ปี</p>
+              </div>
+            );
+          })()}
+
+          {/* Tab: เลขชะตา */}
+          {activeTab === "lifepath" && lifePath !== null && (() => {
+            const lp = lifePathPredictions[lifePath];
+            if (!lp) return null;
+            return (
+              <div className="space-y-4">
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-primary-200">
+                  <div className="flex items-center gap-4 mb-6">
+                    <div className="shrink-0 w-20 h-20 rounded-full bg-primary-600 text-white flex items-center justify-center text-4xl font-bold shadow-lg shadow-primary-200">
+                      {lifePath}
+                    </div>
+                    <div>
+                      <div className="font-bold text-primary-900 text-lg leading-tight">{lp.title}</div>
+                      <div className="text-sm text-primary-600 mt-1">ดาวประจำ: {lp.planet}</div>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="bg-secondary-50 rounded-xl p-4 border border-secondary-100">
+                      <div className="text-xs font-bold text-primary-700 mb-2 uppercase tracking-wide">บุคลิกและนิสัย</div>
+                      <p className="text-sm text-slate-700 leading-relaxed">{lp.traits}</p>
+                    </div>
+                    <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
+                      <div className="text-xs font-bold text-emerald-700 mb-2 uppercase tracking-wide">อาชีพที่เหมาะสม</div>
+                      <p className="text-sm text-slate-700 leading-relaxed">{lp.career}</p>
+                    </div>
+                    <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
+                      <div className="text-xs font-bold text-amber-700 mb-2 uppercase tracking-wide">ข้อควรระวัง</div>
+                      <p className="text-sm text-slate-700 leading-relaxed">{lp.caution}</p>
+                    </div>
+                  </div>
+                </div>
+                <p className="text-xs text-center text-slate-500">เลขชะตาคำนวณจากผลรวมของวัน เดือน และปีเกิด (ค.ศ.) จนเหลือหลักเดียว</p>
+              </div>
+            );
+          })()}
 
               <div className="text-center pt-8 pb-4 space-y-4">
                 <div className="flex items-center justify-center gap-3 flex-wrap">

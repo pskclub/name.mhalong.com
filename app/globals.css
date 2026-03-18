@@ -71,3 +71,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-noto-sans-thai), 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
 }
+
+.rdp-month_grid {
+  width: 100%;
+}
