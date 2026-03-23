@@ -27,7 +27,7 @@ export default function KalakineeTab({ fn, dayIdx, total, badInFirst }: Props) {
           </svg>
           ตรวจอักษรกาลกิณี
         </h3>
-        <div className="text-sm text-primary-800 mb-4 pl-7">
+        <div className="text-primary-800 mb-4 pl-7">
           วันเกิด: <span className="font-bold text-primary-900">วัน{dayData?.day}</span>
           <span className="mx-2 text-primary-300">|</span>
           ควรหลีกเลี่ยง:{" "}
@@ -37,14 +37,14 @@ export default function KalakineeTab({ fn, dayIdx, total, badInFirst }: Props) {
         </div>
         <div className="pl-7">
           {badInFirst.length === 0 ? (
-            <div className="inline-flex items-center gap-2 text-sm font-medium text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
+            <div className="inline-flex items-center gap-2 font-medium text-emerald-700 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
               ดีเยี่ยม! ไม่พบอักษรกาลกิณีในชื่อ
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-sm font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
+            <div className="flex items-center gap-2 font-medium text-accent-700 bg-accent-50 px-3 py-2 rounded-lg border border-accent-200">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
@@ -64,7 +64,7 @@ export default function KalakineeTab({ fn, dayIdx, total, badInFirst }: Props) {
         </h3>
         <div className="space-y-4">
           <div>
-            <h4 className="text-sm font-semibold text-primary-800 mb-2">ชื่อ (ทักษาของแต่ละหมวดอักษร):</h4>
+            <h4 className="font-semibold text-primary-800 mb-2">ชื่อ (ทักษาของแต่ละหมวดอักษร):</h4>
             <div className="flex flex-wrap items-center gap-2">
               {fn.breakdown.map((x, i) => {
                 const cat = getTaksaCategory(dayIdx, x.ch);
@@ -80,22 +80,22 @@ export default function KalakineeTab({ fn, dayIdx, total, badInFirst }: Props) {
           </div>
         </div>
         <div className="mt-6">
-          <h4 className="text-sm font-semibold text-primary-800 mb-3">ความหมายหลักทักษา:</h4>
+          <h4 className="font-semibold text-primary-800 mb-3">ความหมายหลักทักษา:</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {Object.entries(taksaDefinitions).map(([key, desc]) => (
               <div key={key} className="flex flex-col p-3 rounded bg-secondary-50 border border-secondary-100">
-                <span className={`text-sm font-bold ${key === "กาลกิณี" ? "text-red-500" : "text-primary-700"}`}>{key}</span>
-                <span className="text-xs text-slate-600 mt-1">{desc}</span>
+                <span className={`font-bold ${key === "กาลกิณี" ? "text-red-500" : "text-primary-700"}`}>{key}</span>
+                <span className="text-slate-600 mt-1">{desc}</span>
               </div>
             ))}
           </div>
         </div>
         {planetPowerPredictions[total] && (
           <div className="mt-6 border-t border-primary-100 pt-4">
-            <h4 className="text-sm font-semibold text-primary-800 mb-3">นิยามความหมายกำลังดาวพระเคราะห์ (พลังสะท้อนจากเลขรวม):</h4>
+            <h4 className="font-semibold text-primary-800 mb-3">นิยามความหมายกำลังดาวพระเคราะห์ (พลังสะท้อนจากเลขรวม):</h4>
             <div className="bg-primary-50 border border-primary-200 p-4 rounded-xl">
               <div className="font-bold text-primary-900 text-lg mb-1">{planetPowerPredictions[total].title} (กำลัง {total})</div>
-              <div className="text-sm text-slate-700">{planetPowerPredictions[total].desc}</div>
+              <div className="text-slate-700">{planetPowerPredictions[total].desc}</div>
             </div>
           </div>
         )}

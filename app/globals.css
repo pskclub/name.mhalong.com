@@ -8,8 +8,8 @@
 @theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-noto-sans-thai);
-  --font-mono: var(--font-noto-sans-mono);
+  --font-sans: var(--font-app);
+  --font-mono: var(--font-app-mono);
 
   --color-primary-50: #f6f5f0;
   --color-primary-100: #eceae1;
@@ -69,7 +69,7 @@ body {
 
 body {
   color: var(--foreground);
-  font-family: var(--font-noto-sans-thai), 'Noto Sans Thai', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-app), -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .rdp-month_grid {

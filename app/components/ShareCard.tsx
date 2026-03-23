@@ -25,7 +25,7 @@ export default function ShareCard({ result, fullName, cardRef }: Props) {
       className="bg"
       style={{
         position: "fixed", top: 0, left: 0, zIndex: -1, pointerEvents: "none",
-        width: 600, fontFamily: "'Noto Sans Thai', 'Sarabun', sans-serif",
+        width: 600, fontFamily: "'Noto Serif Thai', 'Sarabun', sans-serif",
         padding: 32, boxSizing: "border-box",
       }}
     >

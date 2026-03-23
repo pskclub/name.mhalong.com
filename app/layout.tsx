@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Thai, Noto_Sans_Mono } from "next/font/google";
+import { Noto_Serif_Thai, Noto_Sans_Mono } from "next/font/google";
 import "./globals.css";
 
-const notoSansThai = Noto_Sans_Thai({
-  variable: "--font-noto-sans-thai",
+const fontApp = Noto_Serif_Thai({
+  variable: "--font-app",
   subsets: ["thai", "latin"],
   weight: ["300", "400", "500", "600", "700"],
 });
 
-const notoSansMono = Noto_Sans_Mono({
-  variable: "--font-noto-sans-mono",
+const fontAppMono = Noto_Sans_Mono({
+  variable: "--font-app-mono",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${notoSansThai.variable} ${notoSansMono.variable} antialiased`}
+        className={`${fontApp.variable} ${fontAppMono.variable} antialiased`}
       >
         {children}
       </body>

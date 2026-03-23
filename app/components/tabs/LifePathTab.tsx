@@ -13,21 +13,21 @@ export default function LifePathTab({ lifePath }: { lifePath: number }) {
           </div>
           <div>
             <div className="font-bold text-primary-900 text-lg leading-tight">{lp.title}</div>
-            <div className="text-sm text-primary-600 mt-1">ดาวประจำ: {lp.planet}</div>
+            <div className="text-primary-600 mt-1">ดาวประจำ: {lp.planet}</div>
           </div>
         </div>
         <div className="space-y-3">
           <div className="bg-secondary-50 rounded-xl p-4 border border-secondary-100">
             <div className="text-xs font-bold text-primary-700 mb-2 uppercase tracking-wide">บุคลิกและนิสัย</div>
-            <p className="text-sm text-slate-700 leading-relaxed">{lp.traits}</p>
+            <p className="text-slate-700 leading-relaxed">{lp.traits}</p>
           </div>
           <div className="bg-emerald-50 rounded-xl p-4 border border-emerald-100">
             <div className="text-xs font-bold text-emerald-700 mb-2 uppercase tracking-wide">อาชีพที่เหมาะสม</div>
-            <p className="text-sm text-slate-700 leading-relaxed">{lp.career}</p>
+            <p className="text-slate-700 leading-relaxed">{lp.career}</p>
           </div>
           <div className="bg-amber-50 rounded-xl p-4 border border-amber-100">
             <div className="text-xs font-bold text-amber-700 mb-2 uppercase tracking-wide">ข้อควรระวัง</div>
-            <p className="text-sm text-slate-700 leading-relaxed">{lp.caution}</p>
+            <p className="text-slate-700 leading-relaxed">{lp.caution}</p>
           </div>
         </div>
       </div>

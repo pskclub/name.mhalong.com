@@ -96,14 +96,14 @@ export default function NumerologyTab({ fn, ln, total }: Props) {
                 </div>
               </div>
               <StarRating score={pred.score} id={`pred-${idx}`} />
-              <p className="text-sm leading-relaxed mt-3 text-slate-700">{pred.text}</p>
+              <p className="leading-relaxed mt-3 text-slate-700">{pred.text}</p>
               <div className="mt-4 pt-4 border-t border-primary-100">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-semibold text-primary-600 bg-primary-50 border border-primary-200 px-2 py-0.5 rounded-full">อีกตำราหนึ่ง</span>
                   <span className="text-xs font-medium text-slate-500">{pred.titleAlter}</span>
                 </div>
                 <StarRating score={pred.scoreAlter} id={`pred-alt-${idx}`} />
-                <p className="text-sm leading-relaxed mt-2 text-slate-600">{pred.textAlter}</p>
+                <p className="leading-relaxed mt-2 text-slate-600">{pred.textAlter}</p>
               </div>
             </div>
           );
